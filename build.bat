@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Compilando Gauss Noise con CUDA
+echo Compiling Gauss Noise with CUDA
 echo ========================================
 echo.
 
@@ -8,18 +8,18 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build
 
 cd /d C:\Projects\final_project
 
-echo Compilando gauss_noise.cu...
+echo Compiling gauss_noise.cu...
 nvcc .\gauss_noise.cu -o gauss_noise.exe -arch=sm_89 -I"C:\opencv\build\include" -L"C:\opencv\build\x64\vc16\lib" -lopencv_world4120
 
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================
-    echo Compilacion exitosa!
+    echo Compilation successful!
     echo ========================================
 ) else (
     echo.
     echo ========================================
-    echo Error en la compilacion
+    echo Compilation error
     echo ========================================
 )
 

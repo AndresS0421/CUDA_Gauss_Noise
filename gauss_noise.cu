@@ -16,7 +16,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Estructura para imagen
+// Image structure
 typedef struct {
     int width;
     int height;
@@ -24,13 +24,13 @@ typedef struct {
     unsigned char* data;
 } Image;
 
-// Generador de números aleatorios uniformes en GPU
+// Uniform random number generator on GPU
 __device__ float random_float(unsigned int* seed) {
     *seed = (*seed * 1103515245 + 12345) & 0x7fffffff;
     return (*seed) / 2147483648.0f;
 }
 
-// Transformada Box-Muller para generar números gaussianos
+// Box-Muller transform to generate Gaussian numbers
 __device__ void box_muller(float u1, float u2, float* z0, float* z1) {
     float r = sqrtf(-2.0f * logf(u1 + 1e-10f));
     float theta = 2.0f * M_PI * u2;
@@ -38,13 +38,13 @@ __device__ void box_muller(float u1, float u2, float* z0, float* z1) {
     *z1 = r * sinf(theta);
 }
 
-// Versión CPU para números aleatorios uniformes
+// CPU version for uniform random numbers
 float random_float_cpu(unsigned int* seed) {
     *seed = (*seed * 1103515245 + 12345) & 0x7fffffff;
     return (*seed) / 2147483648.0f;
 }
 
-// Versión CPU para Box-Muller
+// CPU version for Box-Muller
 void box_muller_cpu(float u1, float u2, float* z0, float* z1) {
     float r = sqrtf(-2.0f * logf(u1 + 1e-10f));
     float theta = 2.0f * M_PI * u2;
@@ -52,7 +52,7 @@ void box_muller_cpu(float u1, float u2, float* z0, float* z1) {
     *z1 = r * sinf(theta);
 }
 
-// Versión secuencial (CPU) para agregar ruido gaussiano
+// Sequential (CPU) version to add Gaussian noise
 void add_gaussian_noise_sequential(
     unsigned char* image,
     int width,
@@ -83,7 +83,7 @@ void add_gaussian_noise_sequential(
     }
 }
 
-// Función para obtener tiempo de alta precisión (milisegundos)
+// Function to get high precision time (milliseconds)
 double get_time_ms() {
 #ifdef _WIN32
     LARGE_INTEGER frequency, counter;
@@ -97,7 +97,7 @@ double get_time_ms() {
 #endif
 }
 
-// Función para copiar imagen
+// Function to copy image
 Image copy_image(Image* src) {
     Image dst;
     dst.width = src->width;
@@ -109,7 +109,7 @@ Image copy_image(Image* src) {
     return dst;
 }
 
-// Kernel CUDA para agregar ruido gaussiano
+// CUDA kernel to add Gaussian noise
 __global__ void add_gaussian_noise_kernel(
     unsigned char* image,
     int width,
@@ -141,28 +141,28 @@ __global__ void add_gaussian_noise_kernel(
     }
 }
 
-// Leer imagen (PNG, PPM, etc.)
+// Read image (PNG, PPM, etc.)
 Image read_image(const char* filename) {
     const char* ext = strrchr(filename, '.');
     Image img;
     
-    // Si es PNG, usar OpenCV
+    // If PNG, use OpenCV
     if (ext && (strcmp(ext, ".png") == 0 || strcmp(ext, ".PNG") == 0 || 
                 strcmp(ext, ".jpg") == 0 || strcmp(ext, ".JPG") == 0 ||
                 strcmp(ext, ".jpeg") == 0 || strcmp(ext, ".JPEG") == 0)) {
-        printf("Intentando leer con OpenCV...\n");
+        printf("Attempting to read with OpenCV...\n");
         fflush(stdout);
         
         cv::Mat cv_img = cv::imread(filename, cv::IMREAD_COLOR);
         if (cv_img.empty()) {
-            printf("Error: OpenCV no pudo leer %s\n", filename);
-            printf("Verifica que las DLLs de OpenCV esten en el PATH\n");
-            printf("O que el archivo exista y sea valido\n");
+            printf("Error: OpenCV could not read %s\n", filename);
+            printf("Verify that OpenCV DLLs are in the PATH\n");
+            printf("Or that the file exists and is valid\n");
             fflush(stdout);
             exit(1);
         }
         
-        printf("Imagen leida con OpenCV: %dx%d\n", cv_img.cols, cv_img.rows);
+        printf("Image read with OpenCV: %dx%d\n", cv_img.cols, cv_img.rows);
         fflush(stdout);
         
         img.width = cv_img.cols;
@@ -171,12 +171,12 @@ Image read_image(const char* filename) {
         int size = img.width * img.height * img.channels;
         img.data = (unsigned char*)malloc(size);
         if (!img.data) {
-            printf("Error: No se pudo asignar memoria para la imagen\n");
+            printf("Error: Could not allocate memory for image\n");
             fflush(stdout);
             exit(1);
         }
         
-        // OpenCV usa BGR, convertir a RGB
+        // OpenCV uses BGR, convert to RGB
         for (int y = 0; y < img.height; y++) {
             for (int x = 0; x < img.width; x++) {
                 cv::Vec3b pixel = cv_img.at<cv::Vec3b>(y, x);
@@ -187,10 +187,10 @@ Image read_image(const char* filename) {
             }
         }
     } else {
-        // Leer PPM
+        // Read PPM
         FILE* file = fopen(filename, "rb");
         if (!file) {
-            fprintf(stderr, "Error: No se pudo abrir %s\n", filename);
+            fprintf(stderr, "Error: Could not open %s\n", filename);
             fflush(stderr);
             exit(1);
         }
@@ -198,7 +198,7 @@ Image read_image(const char* filename) {
         char magic[3];
         fscanf(file, "%2s", magic);
         if (magic[0] != 'P' || magic[1] != '6') {
-            fprintf(stderr, "Error: Se requiere formato PPM P6\n");
+            fprintf(stderr, "Error: PPM P6 format required\n");
             fflush(stderr);
             fclose(file);
             exit(1);
@@ -219,20 +219,20 @@ Image read_image(const char* filename) {
     return img;
 }
 
-// Escribir imagen (PNG, PPM, etc.)
+// Write image (PNG, PPM, etc.)
 void write_image(const char* filename, Image* img) {
     const char* ext = strrchr(filename, '.');
     
-    // Si es PNG, usar OpenCV
+    // If PNG, use OpenCV
     if (ext && (strcmp(ext, ".png") == 0 || strcmp(ext, ".PNG") == 0 ||
                 strcmp(ext, ".jpg") == 0 || strcmp(ext, ".JPG") == 0 ||
                 strcmp(ext, ".jpeg") == 0 || strcmp(ext, ".JPEG") == 0)) {
-        printf("Escribiendo con OpenCV...\n");
+        printf("Writing with OpenCV...\n");
         fflush(stdout);
         
         cv::Mat cv_img(img->height, img->width, CV_8UC3);
         
-        // Convertir RGB a BGR para OpenCV
+        // Convert RGB to BGR for OpenCV
         for (int y = 0; y < img->height; y++) {
             for (int x = 0; x < img->width; x++) {
                 int idx = (y * img->width + x) * 3;
@@ -245,16 +245,16 @@ void write_image(const char* filename, Image* img) {
         }
         
         if (!cv::imwrite(filename, cv_img)) {
-            printf("Error: OpenCV no pudo escribir %s\n", filename);
-            printf("Verifica que las DLLs de OpenCV esten en el PATH\n");
+            printf("Error: OpenCV could not write %s\n", filename);
+            printf("Verify that OpenCV DLLs are in the PATH\n");
             fflush(stdout);
             exit(1);
         }
     } else {
-        // Escribir PPM
+        // Write PPM
         FILE* file = fopen(filename, "wb");
         if (!file) {
-            fprintf(stderr, "Error: No se pudo crear %s\n", filename);
+            fprintf(stderr, "Error: Could not create %s\n", filename);
             fflush(stderr);
             exit(1);
         }
@@ -265,62 +265,62 @@ void write_image(const char* filename, Image* img) {
     }
 }
 
-// Macro para verificar errores de CUDA
+// Macro to check CUDA errors
 #define CUDA_CHECK(call) \
     do { \
         cudaError_t err = call; \
         if (err != cudaSuccess) { \
-            fprintf(stderr, "Error CUDA en %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+            fprintf(stderr, "CUDA error at %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
             fflush(stderr); \
             exit(1); \
         } \
     } while(0)
 
 int main(int argc, char* argv[]) {
-    // Mensaje inmediato antes de cualquier inicialización
-    fprintf(stdout, "=== INICIANDO PROGRAMA ===\n");
-    fprintf(stderr, "=== INICIANDO PROGRAMA (stderr) ===\n");
+    // Immediate message before any initialization
+    fprintf(stdout, "=== STARTING PROGRAM ===\n");
+    fprintf(stderr, "=== STARTING PROGRAM (stderr) ===\n");
     fflush(stdout);
     fflush(stderr);
     
-    // Forzar salida inmediata
+    // Force immediate output
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
-    printf("Iniciando programa...\n");
+    printf("Starting program...\n");
     fflush(stdout);
     
     if (argc < 3) {
-        printf("Uso: %s <entrada> <salida> [media] [desviacion]\n", argv[0]);
-        printf("Formatos soportados: PNG, JPG, PPM\n");
+        printf("Usage: %s <input> <output> [mean] [stddev]\n", argv[0]);
+        printf("Supported formats: PNG, JPG, PPM\n");
         fflush(stdout);
         return 1;
     }
     
-    // Verificar que el archivo de entrada existe
+    // Verify that input file exists
     FILE* test = fopen(argv[1], "rb");
     if (!test) {
-        printf("Error: No se puede abrir el archivo de entrada: %s\n", argv[1]);
+        printf("Error: Cannot open input file: %s\n", argv[1]);
         fflush(stdout);
         return 1;
     }
     fclose(test);
     
-    printf("Verificando dispositivo CUDA...\n");
+    printf("Verifying CUDA device...\n");
     fflush(stdout);
     
-    // Verificar dispositivo CUDA
+    // Verify CUDA device
     int deviceCount = 0;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
     if (err != cudaSuccess) {
-        printf("Error al obtener dispositivos CUDA: %s\n", cudaGetErrorString(err));
-        printf("Codigo de error: %d\n", err);
+        printf("Error getting CUDA devices: %s\n", cudaGetErrorString(err));
+        printf("Error code: %d\n", err);
         fflush(stdout);
         return 1;
     }
     
     if (deviceCount == 0) {
-        printf("Error: No se encontraron dispositivos CUDA\n");
+        printf("Error: No CUDA devices found\n");
         fflush(stdout);
         return 1;
     }
@@ -328,25 +328,25 @@ int main(int argc, char* argv[]) {
     cudaDeviceProp prop;
     err = cudaGetDeviceProperties(&prop, 0);
     if (err != cudaSuccess) {
-        printf("Error al obtener propiedades del dispositivo: %s\n", cudaGetErrorString(err));
+        printf("Error getting device properties: %s\n", cudaGetErrorString(err));
         fflush(stdout);
         return 1;
     }
     
-    printf("Dispositivo CUDA: %s\n", prop.name);
-    printf("Capacidad de computo: %d.%d\n", prop.major, prop.minor);
+    printf("CUDA Device: %s\n", prop.name);
+    printf("Compute capability: %d.%d\n", prop.major, prop.minor);
     fflush(stdout);
     
     float mean = (argc >= 4) ? atof(argv[3]) : 0.0f;
-    float stddev = (argc >= 5) ? atof(argv[4]) : 50.0f;  // Más ruido por defecto
+    float stddev = (argc >= 5) ? atof(argv[4]) : 50.0f;  // More noise by default
     
-    printf("Leyendo imagen: %s\n", argv[1]);
+    printf("Reading image: %s\n", argv[1]);
     fflush(stdout);
     
     Image img = read_image(argv[1]);
     
-    printf("Imagen: %d x %d, Canales: %d\n", img.width, img.height, img.channels);
-    printf("Aplicando ruido gaussiano: media=%.2f, desviacion=%.2f\n", mean, stddev);
+    printf("Image: %d x %d, Channels: %d\n", img.width, img.height, img.channels);
+    printf("Applying Gaussian noise: mean=%.2f, stddev=%.2f\n", mean, stddev);
     fflush(stdout);
     
     size_t image_size = img.width * img.height * img.channels * sizeof(unsigned char);
@@ -354,8 +354,8 @@ int main(int argc, char* argv[]) {
     double time_seq = 0.0, time_par = 0.0;
     double time_seq_start, time_seq_end, time_par_start, time_par_end;
     
-    // ========== VERSIÓN SECUENCIAL (CPU) ==========
-    printf("\n=== Ejecutando version SECUENCIAL (CPU) ===\n");
+    // ========== SEQUENTIAL VERSION (CPU) ==========
+    printf("\n=== Executing SEQUENTIAL version (CPU) ===\n");
     fflush(stdout);
     
     Image img_seq = copy_image(&img);
@@ -366,10 +366,10 @@ int main(int argc, char* argv[]) {
     time_seq_end = get_time_ms();
     time_seq = time_seq_end - time_seq_start;
     
-    printf("Tiempo secuencial: %.3f ms\n", time_seq);
+    printf("Sequential time: %.3f ms\n", time_seq);
     fflush(stdout);
     
-    // Guardar imagen secuencial
+    // Save sequential image
     char output_seq[256];
     strncpy(output_seq, argv[2], sizeof(output_seq) - 1);
     output_seq[sizeof(output_seq) - 1] = '\0';
@@ -379,17 +379,17 @@ int main(int argc, char* argv[]) {
     }
     strcat(output_seq, "_seq.png");
     write_image(output_seq, &img_seq);
-    printf("Imagen secuencial guardada: %s\n", output_seq);
+    printf("Sequential image saved: %s\n", output_seq);
     fflush(stdout);
     
-    // ========== VERSIÓN PARALELA (CUDA) ==========
-    printf("\n=== Ejecutando version PARALELA (CUDA) ===\n");
+    // ========== PARALLEL VERSION (CUDA) ==========
+    printf("\n=== Executing PARALLEL version (CUDA) ===\n");
     fflush(stdout);
     
     unsigned char* d_image;
     err = cudaMalloc(&d_image, image_size);
     if (err != cudaSuccess) {
-        printf("Error al asignar memoria en GPU: %s\n", cudaGetErrorString(err));
+        printf("Error allocating memory on GPU: %s\n", cudaGetErrorString(err));
         free(img.data);
         free(img_seq.data);
         fflush(stdout);
@@ -398,7 +398,7 @@ int main(int argc, char* argv[]) {
     
     err = cudaMemcpy(d_image, img.data, image_size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess) {
-        printf("Error al copiar datos a GPU: %s\n", cudaGetErrorString(err));
+        printf("Error copying data to GPU: %s\n", cudaGetErrorString(err));
         cudaFree(d_image);
         free(img.data);
         free(img_seq.data);
@@ -423,7 +423,7 @@ int main(int argc, char* argv[]) {
     
     err = cudaGetLastError();
     if (err != cudaSuccess) {
-        printf("Error en kernel: %s\n", cudaGetErrorString(err));
+        printf("Error in kernel: %s\n", cudaGetErrorString(err));
         cudaFree(d_image);
         free(img.data);
         free(img_seq.data);
@@ -436,7 +436,7 @@ int main(int argc, char* argv[]) {
     time_par = time_par_end - time_par_start;
     
     if (err != cudaSuccess) {
-        printf("Error en sincronizacion: %s\n", cudaGetErrorString(err));
+        printf("Error in synchronization: %s\n", cudaGetErrorString(err));
         cudaFree(d_image);
         free(img.data);
         free(img_seq.data);
@@ -446,7 +446,7 @@ int main(int argc, char* argv[]) {
     
     err = cudaMemcpy(img.data, d_image, image_size, cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
-        printf("Error al copiar datos de GPU: %s\n", cudaGetErrorString(err));
+        printf("Error copying data from GPU: %s\n", cudaGetErrorString(err));
         cudaFree(d_image);
         free(img.data);
         free(img_seq.data);
@@ -454,10 +454,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    printf("Tiempo paralelo: %.3f ms\n", time_par);
+    printf("Parallel time: %.3f ms\n", time_par);
     fflush(stdout);
     
-    // Guardar imagen paralela
+    // Save parallel image
     char output_par[256];
     strncpy(output_par, argv[2], sizeof(output_par) - 1);
     output_par[sizeof(output_par) - 1] = '\0';
@@ -467,32 +467,32 @@ int main(int argc, char* argv[]) {
     }
     strcat(output_par, "_par.png");
     write_image(output_par, &img);
-    printf("Imagen paralela guardada: %s\n", output_par);
+    printf("Parallel image saved: %s\n", output_par);
     fflush(stdout);
     
-    // ========== GUARDAR TIEMPOS EN CSV ==========
+    // ========== SAVE TIMES TO CSV ==========
     FILE* csv = fopen("tiempos.csv", "w");
     if (csv) {
-        fprintf(csv, "Metodo,Tiempo_ms,Speedup,Ancho,Alto,Canales,Media,Desviacion\n");
-        fprintf(csv, "Secuencial,%.3f,1.00,%d,%d,%d,%.2f,%.2f\n", 
+        fprintf(csv, "Method,Time_ms,Speedup,Width,Height,Channels,Mean,StdDev\n");
+        fprintf(csv, "Sequential,%.3f,1.00,%d,%d,%d,%.2f,%.2f\n", 
                 time_seq, img.width, img.height, img.channels, mean, stddev);
         double speedup = time_seq / time_par;
-        fprintf(csv, "Paralelo,%.3f,%.2f,%d,%d,%d,%.2f,%.2f\n", 
+        fprintf(csv, "Parallel,%.3f,%.2f,%d,%d,%d,%.2f,%.2f\n", 
                 time_par, speedup, img.width, img.height, img.channels, mean, stddev);
         fclose(csv);
-        printf("\nTiempos guardados en: tiempos.csv\n");
+        printf("\nTimes saved to: tiempos.csv\n");
         printf("Speedup: %.2fx\n", speedup);
     } else {
-        printf("Advertencia: No se pudo crear tiempos.csv\n");
+        printf("Warning: Could not create tiempos.csv\n");
     }
     fflush(stdout);
     
-    // Limpiar memoria
+    // Clean up memory
     cudaFree(d_image);
     free(img.data);
     free(img_seq.data);
     
-    printf("\n=== Proceso completado exitosamente! ===\n");
+    printf("\n=== Process completed successfully! ===\n");
     fflush(stdout);
     return 0;
 }
