@@ -1,0 +1,3 @@
+Metodo,Tiempo_ms,Speedup,Ancho,Alto,Canales,Media,Desviacion
+Secuencial,12.939,1.00,800,533,3,0.00,50.00
+Paralelo,0.572,22.61,800,533,3,0.00,50.00
